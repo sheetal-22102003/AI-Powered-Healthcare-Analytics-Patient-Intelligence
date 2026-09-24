@@ -48,7 +48,7 @@ HEALTHCARE_INSIGHT360/
 │   └── healthcare_dataset.csv          ← Source dataset (synthetic/anonymized)
 │
 ├── notebooks/
-│   └── heetal_HealthcareInsight360.ipynb  ← Full analysis notebook
+│   └──Sheetal_HealthcareInsight360.ipynb  ← Full analysis notebook
 │
 ├── dashboard/
 │   ├── app.py                          ← Main Streamlit dashboard
@@ -65,7 +65,7 @@ HEALTHCARE_INSIGHT360/
 │
 ├── requirements.txt                    ← Python dependencies
 ├── README.md                           ← This file
-└── _HealthcareInsight360_ProjectReport.docx  ← Project report
+└──Sheetal _HealthcareInsight360_ProjectReport.docx  ← Project report
 ```
 
 ---
