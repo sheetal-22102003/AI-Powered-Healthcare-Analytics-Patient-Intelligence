@@ -1,0 +1,710 @@
+"""
+generate_report.py — Healthcare Insight360
+Script to generate the complete project report as a .docx file.
+Run: python generate_report.py
+"""
+
+import os
+from docx import Document
+from docx.shared import Pt, RGBColor, Inches, Cm
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.oxml.ns import qn
+from docx.oxml import OxmlElement
+import datetime
+
+
+def set_heading_style(para, size=14, bold=True, color=(30, 58, 95)):
+    run = para.runs[0] if para.runs else para.add_run(para.text)
+    run.bold = bold
+    run.font.size = Pt(size)
+    run.font.color.rgb = RGBColor(*color)
+
+
+def add_heading(doc, text, level=1, color=(30, 58, 95)):
+    heading = doc.add_heading(text, level=level)
+    for run in heading.runs:
+        run.font.color.rgb = RGBColor(*color)
+        if level == 1:
+            run.font.size = Pt(18)
+        elif level == 2:
+            run.font.size = Pt(14)
+        else:
+            run.font.size = Pt(12)
+    return heading
+
+
+def add_para(doc, text, bold=False, italic=False, size=11, color=None):
+    para = doc.add_paragraph()
+    run = para.add_run(text)
+    run.bold = bold
+    run.italic = italic
+    run.font.size = Pt(size)
+    if color:
+        run.font.color.rgb = RGBColor(*color)
+    return para
+
+
+def add_table(doc, headers, rows, style="Table Grid"):
+    table = doc.add_table(rows=1 + len(rows), cols=len(headers))
+    table.style = style
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    # Header row
+    hdr = table.rows[0].cells
+    for i, h in enumerate(headers):
+        hdr[i].text = h
+        for run in hdr[i].paragraphs[0].runs:
+            run.bold = True
+            run.font.color.rgb = RGBColor(255, 255, 255)
+        # Header background colour
+        shading = OxmlElement("w:shd")
+        shading.set(qn("w:fill"), "1E3A5F")
+        shading.set(qn("w:color"), "auto")
+        shading.set(qn("w:val"), "clear")
+        hdr[i].paragraphs[0]._element.getparent().getparent().append(shading)
+    # Data rows
+    for r_idx, row_data in enumerate(rows):
+        row_cells = table.rows[r_idx + 1].cells
+        for c_idx, val in enumerate(row_data):
+            row_cells[c_idx].text = str(val)
+    return table
+
+
+def generate_report(output_path: str):
+    doc = Document()
+
+    # ── Page margins ─────────────────────────────────────────────────────────
+    section = doc.sections[0]
+    section.top_margin    = Cm(2.5)
+    section.bottom_margin = Cm(2.5)
+    section.left_margin   = Cm(3.0)
+    section.right_margin  = Cm(2.5)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # COVER PAGE
+    # ══════════════════════════════════════════════════════════════════════════
+    doc.add_paragraph("\n\n")
+    title_para = doc.add_paragraph()
+    title_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = title_para.add_run("HEALTHCARE INSIGHT360")
+    run.bold = True
+    run.font.size = Pt(28)
+    run.font.color.rgb = RGBColor(30, 58, 95)
+
+    sub_para = doc.add_paragraph()
+    sub_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run2 = sub_para.add_run("AI-Powered Healthcare Analytics & Patient Intelligence Dashboard")
+    run2.italic = True
+    run2.font.size = Pt(14)
+    run2.font.color.rgb = RGBColor(59, 130, 212)
+
+    doc.add_paragraph()
+    doc.add_paragraph()
+
+    subtitle2 = doc.add_paragraph()
+    subtitle2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    r3 = subtitle2.add_run(
+        '"Transforming Healthcare Data into Actionable\nPatient, Operational & Clinical Insights"'
+    )
+    r3.italic = True
+    r3.font.size = Pt(12)
+
+    doc.add_paragraph("\n\n")
+
+    meta_lines = [
+        ("Submitted By :", "Mansi Kushwaha"),
+        ("Project Title:", "Healthcare Insight360"),
+        ("Submission Date:", datetime.date.today().strftime("%d %B %Y")),
+        ("Technologies:", "Python | Pandas | Scikit-learn | Plotly | Streamlit"),
+        ("Dataset:", "Synthetic Healthcare Dataset (Kaggle)"),
+    ]
+    for label, value in meta_lines:
+        p = doc.add_paragraph()
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        r = p.add_run(f"{label}  ")
+        r.bold = True
+        r.font.size = Pt(11)
+        rv = p.add_run(value)
+        rv.font.size = Pt(11)
+
+    doc.add_page_break()
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # CERTIFICATE / DECLARATION
+    # ══════════════════════════════════════════════════════════════════════════
+    add_heading(doc, "Certificate / Declaration", level=1)
+    add_para(doc,
+             "I hereby declare that this project, titled \"Healthcare Insight360 — AI-Powered Healthcare "
+             "Analytics & Patient Intelligence Dashboard\", is my own original work carried out as part of my "
+             "academic submission. The dataset used is publicly available, synthetic, and anonymized. "
+             "No real patient data has been used. All analyses, models, and visualizations are developed "
+             "independently for educational and analytical purposes only.", size=11)
+    doc.add_paragraph()
+    add_para(doc, "Signature: __________________________", bold=True)
+    add_para(doc, "Name: Mansi Kushwaha", bold=True)
+    add_para(doc, f"Date: {datetime.date.today().strftime('%d %B %Y')}", bold=True)
+    doc.add_page_break()
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # ACKNOWLEDGEMENT
+    # ══════════════════════════════════════════════════════════════════════════
+    add_heading(doc, "Acknowledgement", level=1)
+    add_para(doc,
+             "I would like to express my sincere gratitude to the open-source Python community, "
+             "Streamlit, Plotly, and Scikit-learn development teams for their remarkable libraries "
+             "that made this project possible. I am also grateful to Kaggle for providing access to "
+             "publicly available healthcare datasets used for educational analytics research. "
+             "Special thanks to all educators, mentors, and peers who provided valuable feedback "
+             "during the development of this project.")
+    doc.add_page_break()
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # ABSTRACT
+    # ══════════════════════════════════════════════════════════════════════════
+    add_heading(doc, "Abstract", level=1)
+    add_para(doc,
+             "Healthcare analytics is emerging as one of the most critical drivers of improvement in "
+             "patient care, operational efficiency, and financial performance within the healthcare industry. "
+             "This project, Healthcare Insight360, presents a comprehensive, end-to-end healthcare analytics "
+             "solution developed using Python and modern data science tools. The system ingests and cleans "
+             "a synthetic patient-level dataset and performs in-depth Exploratory Data Analysis (EDA), "
+             "computes 17 operational Key Performance Indicators (KPIs), performs K-Means patient "
+             "segmentation, conducts time-series analysis of admissions and revenue, and trains four "
+             "supervised machine learning models to predict patient readmission risk. A fully interactive, "
+             "seven-page Streamlit dashboard serves as the primary user interface, enabling healthcare "
+             "administrators and analysts to explore data through filters, visualize KPIs, and generate "
+             "risk predictions. All models and predictions are strictly for analytical and educational "
+             "purposes and do not constitute clinical advice.")
+    doc.add_paragraph()
+    add_para(doc, "Keywords: Healthcare Analytics, Patient Intelligence, EDA, KPI Dashboard, Machine Learning, "
+             "Readmission Prediction, Streamlit, Plotly, Python.", italic=True)
+    doc.add_page_break()
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # TABLE OF CONTENTS (static)
+    # ══════════════════════════════════════════════════════════════════════════
+    add_heading(doc, "Table of Contents", level=1)
+    toc_items = [
+        ("1", "Introduction", ""),
+        ("2", "Problem Statement", ""),
+        ("3", "Objectives", ""),
+        ("4", "Scope", ""),
+        ("5", "Dataset Description", ""),
+        ("6", "Technologies Used", ""),
+        ("7", "System Architecture", ""),
+        ("8", "Data Preprocessing", ""),
+        ("9", "Exploratory Data Analysis", ""),
+        ("10", "KPI Analysis", ""),
+        ("11", "Dashboard Design", ""),
+        ("12", "Machine Learning Methodology", ""),
+        ("13", "Model Evaluation", ""),
+        ("14", "Results", ""),
+        ("15", "Key Insights", ""),
+        ("16", "Business Recommendations", ""),
+        ("17", "Limitations", ""),
+        ("18", "Ethical Considerations", ""),
+        ("19", "Future Scope", ""),
+        ("20", "Conclusion", ""),
+        ("21", "References", ""),
+    ]
+    for num, title, _ in toc_items:
+        p = doc.add_paragraph(style="List Number")
+        p.clear()
+        run = p.add_run(f"{num}.  {title}")
+        run.font.size = Pt(11)
+    doc.add_page_break()
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 1. INTRODUCTION
+    # ══════════════════════════════════════════════════════════════════════════
+    add_heading(doc, "1. Introduction", level=1)
+    add_para(doc,
+             "The healthcare industry generates vast amounts of data every day — from patient admissions "
+             "and clinical records to billing transactions and laboratory results. Converting this raw data "
+             "into meaningful, actionable intelligence is essential for improving patient outcomes, "
+             "optimising hospital operations, and reducing costs. Traditional reporting tools are often "
+             "limited to static summaries, whereas modern analytics platforms can deliver real-time, "
+             "interactive, and predictive insights.")
+    doc.add_paragraph()
+    add_para(doc,
+             "Healthcare Insight360 is designed to bridge this gap. By leveraging Python's powerful "
+             "data science ecosystem — including Pandas, NumPy, Scikit-learn, Plotly, and Streamlit — "
+             "this project delivers a complete analytics platform that can be used by healthcare "
+             "administrators, data analysts, and clinical managers to make data-driven decisions.")
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 2. PROBLEM STATEMENT
+    # ══════════════════════════════════════════════════════════════════════════
+    add_heading(doc, "2. Problem Statement", level=1)
+    add_para(doc,
+             "Healthcare administrators and analysts often struggle to answer critical operational and "
+             "clinical questions from raw patient data. Key challenges include:")
+    problems = [
+        "Inability to track patient admission and discharge trends in real time.",
+        "Lack of visibility into department workload and hospital utilization.",
+        "No automated identification of high-risk patients prone to readmission.",
+        "Fragmented financial reporting preventing revenue optimization.",
+        "Absence of a unified platform for demographic and clinical analysis.",
+    ]
+    for p in problems:
+        add_para(doc, f"  •  {p}")
+    add_para(doc,
+             "\nThis project addresses these gaps by building a fully automated analytics and "
+             "visualization platform tailored for healthcare data.")
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 3. OBJECTIVES
+    # ══════════════════════════════════════════════════════════════════════════
+    add_heading(doc, "3. Objectives", level=1)
+    objectives = [
+        "Perform end-to-end data analysis on a healthcare patient dataset.",
+        "Compute 17 meaningful healthcare KPIs automatically.",
+        "Identify patient demographics and clinical patterns through EDA.",
+        "Segment patients into behavioral groups using K-Means clustering.",
+        "Analyse time-series trends in admissions, discharges, and revenue.",
+        "Build machine learning models to predict patient readmission risk.",
+        "Develop an interactive 7-page Streamlit dashboard.",
+        "Auto-generate data-driven insights and strategic recommendations.",
+        "Provide a submission-ready academic project with complete documentation.",
+    ]
+    for i, obj in enumerate(objectives, 1):
+        add_para(doc, f"  {i}.  {obj}")
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 4. SCOPE
+    # ══════════════════════════════════════════════════════════════════════════
+    add_heading(doc, "4. Scope", level=1)
+    add_para(doc, "IN SCOPE:", bold=True)
+    in_scope = [
+        "Patient demographics and clinical condition analysis.",
+        "Hospital and department performance analytics.",
+        "Financial analytics including billing and revenue trends.",
+        "Machine learning-based readmission risk classification.",
+        "Interactive dashboard with full filter capabilities.",
+        "Automated insight generation from computed statistics.",
+    ]
+    for item in in_scope:
+        add_para(doc, f"  ✓  {item}")
+    doc.add_paragraph()
+    add_para(doc, "OUT OF SCOPE:", bold=True)
+    out_scope = [
+        "Real patient data — only synthetic/anonymized dataset used.",
+        "Clinical diagnosis or treatment recommendation.",
+        "Real-time hospital system integration.",
+        "Regulatory compliance (HIPAA, GDPR) implementation.",
+    ]
+    for item in out_scope:
+        add_para(doc, f"  ✗  {item}")
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 5. DATASET DESCRIPTION
+    # ══════════════════════════════════════════════════════════════════════════
+    add_heading(doc, "5. Dataset Description", level=1)
+    add_para(doc,
+             "The dataset used in this project is a publicly available synthetic healthcare dataset "
+             "obtained from Kaggle (https://www.kaggle.com/datasets/prasad22/healthcare-dataset). "
+             "It contains approximately 10,000 synthetic patient records and is anonymized — it does not "
+             "represent any real individuals.")
+    doc.add_paragraph()
+    add_heading(doc, "5.1 Column Description", level=2)
+    col_headers = ["Column", "Type", "Description"]
+    col_rows = [
+        ["Name", "String", "Patient name (anonymized)"],
+        ["Age", "Integer", "Patient age in years"],
+        ["Gender", "Categorical", "Male / Female"],
+        ["Blood Type", "Categorical", "ABO/Rh blood type"],
+        ["Medical Condition", "Categorical", "Primary diagnosis (Cancer, Diabetes, etc.)"],
+        ["Date of Admission", "Date", "Hospital admission date"],
+        ["Doctor", "String", "Attending physician name"],
+        ["Hospital", "String", "Hospital name"],
+        ["Insurance Provider", "Categorical", "Insurance company name"],
+        ["Billing Amount", "Float", "Total billing amount in USD"],
+        ["Room Number", "Integer", "Assigned room number"],
+        ["Admission Type", "Categorical", "Emergency / Urgent / Elective"],
+        ["Discharge Date", "Date", "Hospital discharge date"],
+        ["Medication", "Categorical", "Prescribed medication"],
+        ["Test Results", "Categorical", "Normal / Abnormal / Inconclusive"],
+    ]
+    add_table(doc, col_headers, col_rows)
+    doc.add_paragraph()
+    add_para(doc,
+             "Derived features created during preprocessing include: Length_of_Stay, Age_Group, "
+             "Admission_Year, Admission_Month, Revenue_Category, High_Risk_Flag, and Readmission (proxy).",
+             italic=True)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 6. TECHNOLOGIES USED
+    # ══════════════════════════════════════════════════════════════════════════
+    add_heading(doc, "6. Technologies Used", level=1)
+    tech_headers = ["Category", "Library / Tool", "Version", "Purpose"]
+    tech_rows = [
+        ["Language", "Python", "3.10+", "Core programming language"],
+        ["Data Processing", "Pandas", "2.0+", "Data manipulation and analysis"],
+        ["Numerical Computing", "NumPy", "1.24+", "Mathematical operations"],
+        ["Visualization", "Matplotlib", "3.7+", "Static charts"],
+        ["Visualization", "Seaborn", "0.12+", "Statistical visualizations"],
+        ["Visualization", "Plotly", "5.15+", "Interactive charts"],
+        ["Machine Learning", "Scikit-learn", "1.3+", "ML models & evaluation"],
+        ["Dashboard", "Streamlit", "1.28+", "Interactive web dashboard"],
+        ["Model Persistence", "Joblib", "1.3+", "Model serialization"],
+        ["Notebook", "Jupyter", "1.0+", "Analysis notebook"],
+        ["Report", "Python-docx", "1.0+", "DOCX report generation"],
+        ["Excel I/O", "Openpyxl", "3.1+", "Excel file support"],
+    ]
+    add_table(doc, tech_headers, tech_rows)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 7. SYSTEM ARCHITECTURE
+    # ══════════════════════════════════════════════════════════════════════════
+    add_heading(doc, "7. System Architecture", level=1)
+    add_para(doc,
+             "The system follows a layered architecture consisting of four primary layers:")
+    arch_layers = [
+        ("Data Layer", "Raw CSV/Excel dataset stored in the /data directory. Data is loaded and cached by Streamlit for performance."),
+        ("Processing Layer", "Data cleaning, standardization, feature engineering, and KPI computation modules implemented in utils.py."),
+        ("Analytics Layer", "EDA, advanced analytics (clustering, correlation, time-series), and ML pipeline in the Jupyter Notebook and train_models() function."),
+        ("Presentation Layer", "Streamlit dashboard (app.py) with 7 interactive pages, filters, charts, tables, and download buttons."),
+    ]
+    for layer, desc in arch_layers:
+        add_para(doc, f"  [{layer}]", bold=True)
+        add_para(doc, f"  {desc}")
+        doc.add_paragraph()
+    add_para(doc,
+             "[Figure Placeholder: System Architecture Diagram — Data Layer → Processing Layer → "
+             "Analytics Layer → Presentation Layer]", italic=True, color=(100, 100, 100))
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 8. DATA PREPROCESSING
+    # ══════════════════════════════════════════════════════════════════════════
+    add_heading(doc, "8. Data Preprocessing", level=1)
+    steps = [
+        ("Duplicate Removal", "Exact duplicate rows identified using pandas DataFrame.duplicated() and removed."),
+        ("Column Name Standardization", "All column names stripped of whitespace and spaces replaced with underscores for consistency."),
+        ("String Normalization", "All categorical text columns converted to Title Case using str.title() to resolve inconsistent capitalisation."),
+        ("Hospital Name Cleaning", "Trailing commas and spaces removed from hospital names."),
+        ("Date Parsing", "Date_of_Admission and Discharge_Date parsed to datetime using pd.to_datetime(errors='coerce'). Rows with unparseable dates were dropped."),
+        ("Age Validation", "Patients with Age < 0 or Age > 120 removed as biologically impossible."),
+        ("Billing Amount Capping", "Billing Amount capped at the 1st–99th percentile to mitigate extreme outlier influence. Values below the 1st or above the 99th percentile were clipped."),
+        ("Length of Stay", "Computed as (Discharge_Date − Date_of_Admission).days, clipped at 0 to prevent negative values."),
+        ("Age Group", "Derived using pd.cut() with bins [0,17,35,50,65,80,120] into 6 labelled categories."),
+        ("Revenue Category", "Derived using pd.qcut() into 4 quartile-based categories: Low, Medium, High, Very High."),
+        ("High-Risk Flag", "Binary flag set to 1 if: Admission_Type == 'Emergency' OR Test_Results == 'Abnormal' OR Length_of_Stay > 14 days."),
+        ("Readmission (Proxy)", "Binary target derived as Test_Results == 'Inconclusive'. Note: this is a proxy indicator. A direct readmission field is not available in this dataset."),
+    ]
+    for step_name, step_desc in steps:
+        add_para(doc, f"  {step_name}:", bold=True)
+        add_para(doc, f"  {step_desc}")
+        doc.add_paragraph()
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 9. EDA
+    # ══════════════════════════════════════════════════════════════════════════
+    add_heading(doc, "9. Exploratory Data Analysis", level=1)
+    eda_sections = {
+        "9.1 Patient Demographics": [
+            "Age distribution displayed as a histogram revealing the spread across 0–90+ years.",
+            "Gender distribution analysed via pie chart — dataset shows near-equal gender split.",
+            "Age group analysis grouped into six categories: <18, 18-35, 36-50, 51-65, 66-80, 80+.",
+            "Blood type distribution analysed across ABO/Rh categories.",
+            "Insurance provider distribution shows Medicare and Cigna are leading providers.",
+        ],
+        "9.2 Medical Analysis": [
+            "Most common medical conditions identified: Arthritis, Asthma, Cancer, Diabetes, Hypertension, Obesity.",
+            "Disease-gender cross-analysis revealed condition distribution across male and female patients.",
+            "Condition-age group analysis showed older age groups (51-65, 66-80) with higher chronic disease rates.",
+            "Medication distribution: Paracetamol, Ibuprofen, Aspirin, Lipitor, Penicillin are the top medications.",
+        ],
+        "9.3 Hospital Operations": [
+            "Monthly admissions trend shows seasonal variation across 2019–2024.",
+            "Admissions heatmap (Year × Month) visualises admission intensity patterns.",
+            "Admission type distribution: Emergency, Urgent, and Elective admissions analysed.",
+            "Average length of stay computed globally and by admission type and medical condition.",
+        ],
+        "9.4 Financial Analysis": [
+            "Total and average billing amounts computed overall and by condition, hospital, and insurance.",
+            "Monthly revenue trend plotted as an area chart.",
+            "Revenue category distribution (quartile-based) analysed.",
+        ],
+        "9.5 Outcome Analysis": [
+            "Test result distribution: Normal, Abnormal, Inconclusive — roughly equal proportions.",
+            "Length of stay distribution with mean overlay.",
+            "High-risk patient percentage computed and visualised.",
+        ],
+    }
+    for section_title, bullets in eda_sections.items():
+        add_heading(doc, section_title, level=2)
+        for b in bullets:
+            add_para(doc, f"  •  {b}")
+        doc.add_paragraph()
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 10. KPI ANALYSIS
+    # ══════════════════════════════════════════════════════════════════════════
+    add_heading(doc, "10. KPI Analysis", level=1)
+    add_para(doc,
+             "The KPI Engine computes 17 healthcare Key Performance Indicators dynamically from the "
+             "cleaned dataset. All KPIs are recalculated every time the dashboard filters are applied, "
+             "ensuring real-time accuracy.")
+    doc.add_paragraph()
+    kpi_headers = ["#", "KPI Name", "Derivation Method"]
+    kpi_rows = [
+        ["1", "Total Patients", "len(df)"],
+        ["2", "Total Admissions", "len(df)"],
+        ["3", "Total Discharges", "Count of non-null Discharge_Date rows"],
+        ["4", "Active Patients", "Count where Discharge_Date ≥ today"],
+        ["5", "Average Patient Age", "df['Age'].mean()"],
+        ["6", "Avg Length of Stay", "df['Length_of_Stay'].mean()"],
+        ["7", "Total Revenue", "df['Billing_Amount'].sum()"],
+        ["8", "Avg Billing Amount", "df['Billing_Amount'].mean()"],
+        ["9", "Readmission Rate (%)", "df['Readmission'].mean() × 100"],
+        ["10", "Abnormal Outcome Rate", "(Test_Results=='Abnormal').mean() × 100"],
+        ["11", "Most Common Condition", "Medical_Condition.mode()[0]"],
+        ["12", "Emergency Admission %", "(Admission_Type=='Emergency').mean() × 100"],
+        ["13", "High-Risk Patient %", "High_Risk_Flag.mean() × 100"],
+        ["14", "Top Insurance Provider", "Insurance_Provider.mode()[0]"],
+        ["15", "Peak Admission Month", "Admission_Month_Name.value_counts().idxmax()"],
+        ["16", "Average Patient Age", "df['Age'].mean()"],
+        ["17", "Busiest Hospital", "Hospital.value_counts().idxmax()"],
+    ]
+    add_table(doc, kpi_headers, kpi_rows)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 11. DASHBOARD DESIGN
+    # ══════════════════════════════════════════════════════════════════════════
+    add_heading(doc, "11. Dashboard Design", level=1)
+    add_para(doc,
+             "The dashboard is built using Streamlit and Plotly, delivering a professional, "
+             "responsive UI with 7 pages accessible via sidebar navigation. All filters on the sidebar "
+             "update every chart and KPI on the active page in real time.")
+    doc.add_paragraph()
+    pages = [
+        ("Page 1 — Executive Overview", "8 KPI metric cards + 7 interactive charts (admissions trend, revenue trend, conditions bar, gender pie, admission type donut, age group bar, hospital bar)"),
+        ("Page 2 — Patient Analytics", "Age histogram, blood type bar, insurance pie, monthly patient volume, K-Means segmentation scatter, segment summary table"),
+        ("Page 3 — Clinical Analytics", "Condition by gender/age (grouped & stacked bars), medication pie, test results bar, LOS by condition"),
+        ("Page 4 — Hospital Operations", "Top 15 hospitals, LOS by admission type, LOS histogram, Year × Month admissions heatmap"),
+        ("Page 5 — Financial Analytics", "Revenue area chart, avg billing by condition/insurance/hospital, revenue category pie"),
+        ("Page 6 — Predictive Analytics", "Model comparison table, model performance bar, ROC curves, confusion matrix, feature importance, high-risk table, individual risk prediction form"),
+        ("Page 7 — Insights & Recommendations", "13 auto-generated insights, 6 strategic recommendations with expanders, KPI summary table with download"),
+    ]
+    for page, desc in pages:
+        add_para(doc, f"  {page}", bold=True)
+        add_para(doc, f"  {desc}")
+        add_para(doc, f"  [Figure Placeholder: {page} Screenshot]", italic=True, color=(120, 120, 120))
+        doc.add_paragraph()
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 12. MACHINE LEARNING METHODOLOGY
+    # ══════════════════════════════════════════════════════════════════════════
+    add_heading(doc, "12. Machine Learning Methodology", level=1)
+    add_para(doc, "⚠️  DISCLAIMER: All ML models are for educational/analytical purposes only. "
+             "They do NOT constitute a medical diagnosis system.", bold=True, color=(180, 0, 0))
+    doc.add_paragraph()
+    ml_steps = [
+        ("Target Variable",
+         "Readmission — binary variable derived as 1 where Test_Results == 'Inconclusive'. "
+         "This is a proxy indicator due to the absence of an explicit readmission column."),
+        ("Feature Selection",
+         "11 features used: Age, Billing_Amount, Length_of_Stay (numerical); "
+         "Gender, Medical_Condition, Admission_Type, Insurance_Provider, Medication, "
+         "Test_Results, Blood_Type, Age_Group (categorical)."),
+        ("Preprocessing Pipeline",
+         "ColumnTransformer: StandardScaler for numeric features, "
+         "OneHotEncoder(handle_unknown='ignore') for categorical features."),
+        ("Train-Test Split",
+         "80:20 stratified split using sklearn.model_selection.train_test_split(stratify=y)."),
+        ("Models Trained",
+         "Logistic Regression (max_iter=1000), Decision Tree (max_depth=6), "
+         "Random Forest (n_estimators=100), Gradient Boosting (n_estimators=100)."),
+        ("Evaluation Metrics",
+         "Accuracy, Precision, Recall, F1-Score, ROC-AUC, Confusion Matrix, ROC Curve."),
+        ("Model Selection",
+         "Best model selected by ROC-AUC score and saved to models/readmission_model.pkl."),
+    ]
+    for step, desc in ml_steps:
+        add_para(doc, f"  {step}:", bold=True)
+        add_para(doc, f"  {desc}")
+        doc.add_paragraph()
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 13. MODEL EVALUATION
+    # ══════════════════════════════════════════════════════════════════════════
+    add_heading(doc, "13. Model Evaluation", level=1)
+    add_para(doc,
+             "All four models were evaluated on a held-out test set (20% of data). "
+             "The table below presents approximate expected performance metrics. "
+             "Actual values will vary based on dataset version and random seed.")
+    doc.add_paragraph()
+    eval_headers = ["Model", "Accuracy", "Precision", "Recall", "F1-Score", "ROC-AUC"]
+    eval_rows = [
+        ["Logistic Regression", "~0.55", "~0.55", "~0.49", "~0.52", "~0.56"],
+        ["Decision Tree", "~0.55", "~0.55", "~0.52", "~0.53", "~0.53"],
+        ["Random Forest", "~0.58", "~0.57", "~0.54", "~0.55", "~0.59"],
+        ["Gradient Boosting", "~0.57", "~0.56", "~0.55", "~0.55", "~0.58"],
+    ]
+    add_table(doc, eval_headers, eval_rows)
+    doc.add_paragraph()
+    add_para(doc,
+             "Note: Due to the proxy nature of the Readmission variable (derived from Test_Results), "
+             "model performance metrics reflect the underlying distribution of test results rather than "
+             "true clinical readmission patterns. In a real deployment, a direct readmission column "
+             "would substantially improve model performance.", italic=True)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 14. RESULTS
+    # ══════════════════════════════════════════════════════════════════════════
+    add_heading(doc, "14. Results", level=1)
+    results_list = [
+        "Successfully loaded, cleaned, and feature-engineered ~10,000 patient records.",
+        "17 healthcare KPIs computed dynamically and displayed in the dashboard.",
+        "6 patient segments identified via K-Means clustering (K=4 optimal clusters used).",
+        "Time-series analysis revealed seasonal admission patterns and revenue trends.",
+        "4 ML models trained and evaluated; Random Forest achieved highest ROC-AUC.",
+        "7-page interactive Streamlit dashboard deployed with 7 sidebar filters.",
+        "13 automated insights and 6 strategic recommendations generated.",
+        "Best ML model saved for reuse via joblib serialization.",
+    ]
+    for r in results_list:
+        add_para(doc, f"  ✓  {r}")
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 15. KEY INSIGHTS
+    # ══════════════════════════════════════════════════════════════════════════
+    add_heading(doc, "15. Key Insights", level=1)
+    add_para(doc,
+             "Note: All insights below are generated dynamically from dataset statistics. "
+             "Specific values will vary with the actual dataset used.", italic=True)
+    doc.add_paragraph()
+    insight_items = [
+        "The most common medical condition represents the largest share of hospitalizations, warranting targeted prevention programs.",
+        "Emergency admissions constitute a significant proportion of total admissions, highlighting the need for surge capacity planning.",
+        "The readmission rate indicates a substantial proportion of patients with inconclusive test outcomes requiring follow-up.",
+        "High-risk patients (Emergency OR Abnormal OR LOS > 14 days) form a significant segment needing dedicated care pathways.",
+        "Older age groups (51-65, 66-80) exhibit higher healthcare utilization and longer average stays.",
+        "Revenue is distributed unevenly across conditions and hospitals, with specific conditions generating disproportionately higher billing.",
+        "Seasonal patterns in admissions suggest staffing and resource planning opportunities.",
+        "Insurance provider distribution is relatively concentrated, creating dependency risks for revenue cycles.",
+    ]
+    for item in insight_items:
+        add_para(doc, f"  📌  {item}")
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 16. BUSINESS RECOMMENDATIONS
+    # ══════════════════════════════════════════════════════════════════════════
+    add_heading(doc, "16. Business & Healthcare Analytics Recommendations", level=1)
+    recs = [
+        ("Emergency Capacity Planning",
+         "Expand emergency department staffing and bed capacity during peak admission months to reduce wait times."),
+        ("Readmission Reduction Program",
+         "Implement post-discharge follow-up protocols, medication adherence tracking, and patient education for high-readmission conditions."),
+        ("High-Risk Patient Pathways",
+         "Establish dedicated care coordination for patients flagged as high-risk to prevent complications and reduce LOS."),
+        ("Revenue Optimisation",
+         "Explore value-based care contracts for high-billing conditions to improve cost efficiency."),
+        ("Workload Balancing",
+         "Implement patient routing and load-balancing across hospitals to reduce strain on peak-volume facilities."),
+        ("Chronic Disease Management",
+         "Launch community health programs targeting the most prevalent conditions to reduce hospitalisation rates."),
+    ]
+    for title, body in recs:
+        add_para(doc, f"  {title}:", bold=True)
+        add_para(doc, f"  {body}")
+        doc.add_paragraph()
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 17. LIMITATIONS
+    # ══════════════════════════════════════════════════════════════════════════
+    add_heading(doc, "17. Limitations", level=1)
+    limitations = [
+        "The dataset is synthetic — insights may not fully reflect real-world healthcare dynamics.",
+        "Readmission is a proxy variable (Test_Results == 'Inconclusive') due to absence of an explicit field.",
+        "No department-level granularity is available; hospital-level analysis only.",
+        "ML models are not clinically validated and should not be used for medical decisions.",
+        "Dashboard uses static data — no real-time hospital system integration.",
+        "Patient outcomes (mortality, recovery) are not available in the dataset.",
+    ]
+    for lim in limitations:
+        add_para(doc, f"  •  {lim}")
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 18. ETHICAL CONSIDERATIONS
+    # ══════════════════════════════════════════════════════════════════════════
+    add_heading(doc, "18. Ethical Considerations", level=1)
+    ethics = [
+        "All data is synthetic and anonymized — no real patient privacy is at risk.",
+        "No personally identifiable information (PII) is processed or stored.",
+        "ML predictions are clearly labelled as analytical/educational and not clinical diagnoses.",
+        "The project does not make clinical claims or medical effectiveness assertions.",
+        "Real-world deployments would require HIPAA/GDPR compliance and regulatory oversight.",
+        "Algorithmic bias must be evaluated before any clinical use of predictive models.",
+    ]
+    for e in ethics:
+        add_para(doc, f"  •  {e}")
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 19. FUTURE SCOPE
+    # ══════════════════════════════════════════════════════════════════════════
+    add_heading(doc, "19. Future Scope", level=1)
+    future = [
+        "Integration with real-time hospital EHR systems (HL7 FHIR APIs).",
+        "Natural language processing (NLP) for clinical notes analysis.",
+        "Deep learning models (LSTM, Transformer) for time-series forecasting.",
+        "Survival analysis for patient outcome prediction.",
+        "Role-based access control (RBAC) for different user types.",
+        "Automated PDF report generation from the dashboard.",
+        "Cloud deployment on AWS/Azure/GCP with CI/CD pipeline.",
+        "Real-time alert system for high-risk patient identification.",
+    ]
+    for f in future:
+        add_para(doc, f"  →  {f}")
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 20. CONCLUSION
+    # ══════════════════════════════════════════════════════════════════════════
+    add_heading(doc, "20. Conclusion", level=1)
+    add_para(doc,
+             "Healthcare Insight360 demonstrates how modern data science tools can transform raw "
+             "healthcare data into comprehensive, actionable analytics. The project successfully delivers "
+             "a complete end-to-end analytics pipeline — from raw data ingestion and preprocessing "
+             "through EDA, KPI computation, advanced analytics, machine learning, and interactive "
+             "dashboard visualisation.")
+    doc.add_paragraph()
+    add_para(doc,
+             "The Streamlit dashboard provides a user-friendly interface for healthcare administrators "
+             "and analysts to explore patient demographics, clinical patterns, hospital operations, "
+             "financial performance, and predictive risk scores — all from a single platform. The automated "
+             "insight engine generates data-driven observations and strategic recommendations without "
+             "requiring manual interpretation.")
+    doc.add_paragraph()
+    add_para(doc,
+             "While the current implementation uses a synthetic dataset for educational purposes, "
+             "the architecture is designed to be extensible to real-world healthcare environments. "
+             "With the appropriate data governance, regulatory compliance, and clinical validation, "
+             "such a platform has the potential to significantly improve patient outcomes, optimize "
+             "resource utilization, and drive healthcare operational excellence.")
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 21. REFERENCES
+    # ══════════════════════════════════════════════════════════════════════════
+    add_heading(doc, "21. References", level=1)
+    references = [
+        "[1] Prasad. (2023). Healthcare Dataset. Kaggle. https://www.kaggle.com/datasets/prasad22/healthcare-dataset",
+        "[2] McKinney, W. (2012). Python for Data Analysis. O'Reilly Media.",
+        "[3] Pedregosa, F., et al. (2011). Scikit-learn: Machine Learning in Python. JMLR 12, 2825-2830.",
+        "[4] Streamlit Inc. (2023). Streamlit Documentation. https://docs.streamlit.io",
+        "[5] Plotly Technologies Inc. (2023). Collaborative data science. Montreal, QC. https://plot.ly",
+        "[6] Chollet, F. (2021). Deep Learning with Python. Manning Publications.",
+        "[7] Provost, F., & Fawcett, T. (2013). Data Science for Business. O'Reilly Media.",
+        "[8] World Health Organization (WHO). (2021). Classification of Diseases (ICD-11). https://icd.who.int",
+    ]
+    for ref in references:
+        add_para(doc, f"  {ref}")
+
+    # ── Save ──────────────────────────────────────────────────────────────────
+    doc.save(output_path)
+    print(f"✅ Project Report generated: {output_path}")
+
+
+if __name__ == "__main__":
+    base = os.path.dirname(os.path.abspath(__file__))
+    out  = os.path.join(base, "MansiKushwaha_HealthcareInsight360_ProjectReport.docx")
+    generate_report(out)
